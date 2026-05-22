@@ -1,5 +1,9 @@
 module Boldsign
   module Resources
+    # Template endpoints (`/v1/template/*`) — create, send, edit, and embed
+    # reusable signing templates.
+    #
+    # @see https://developers.boldsign.com/templates
     class Template < Resource
       def list(**params);          @client.get("/v1/template/list", params); end
       def properties(template_id); @client.get("/v1/template/properties", templateId: template_id); end

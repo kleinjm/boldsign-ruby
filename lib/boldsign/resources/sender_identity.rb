@@ -1,5 +1,6 @@
 module Boldsign
   module Resources
+    # Sender-identity endpoints (`/v1/senderIdentities/*`).
     class SenderIdentity < Resource
       def list(**params);  @client.get("/v1/senderIdentities/list", params); end
       def properties(**params); @client.get("/v1/senderIdentities/properties", params); end

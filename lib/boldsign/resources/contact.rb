@@ -1,5 +1,7 @@
 module Boldsign
   module Resources
+    # Contact-book endpoints (`/v1/contacts/*`).
+    # @see https://developers.boldsign.com/contacts
     class Contact < Resource
       def list(**params);    @client.get("/v1/contacts/list", params); end
       def get(contact_id);   @client.get("/v1/contacts/get", contactId: contact_id); end

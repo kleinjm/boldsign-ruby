@@ -1,5 +1,17 @@
 module Boldsign
   module Resources
+    # Document endpoints (`/v1/document/*`) — the bulk of the BoldSign API:
+    # sending, listing, downloading, editing, reminding, authenticating, tagging,
+    # and embedded signing flows.
+    #
+    # @example Send a document
+    #   client.documents.send_document(
+    #     title: "NDA",
+    #     signers: [{ name: "Jane", emailAddress: "jane@example.com", signerOrder: 1 }],
+    #     files: [...]
+    #   )
+    #
+    # @see https://developers.boldsign.com/documents
     class Document < Resource
       def list(**params);       @client.get("/v1/document/list", params); end
       def team_list(**params);  @client.get("/v1/document/teamlist", params); end

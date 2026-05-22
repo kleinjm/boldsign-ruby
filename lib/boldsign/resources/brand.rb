@@ -1,5 +1,7 @@
 module Boldsign
   module Resources
+    # Brand-customization endpoints (`/v1/brand/*`).
+    # @see https://developers.boldsign.com/branding
     class Brand < Resource
       def list(**params);  @client.get("/v1/brand/list", params); end
       def get(brand_id);   @client.get("/v1/brand/get", brandId: brand_id); end

@@ -1,5 +1,8 @@
 # boldsign-ruby
 
+[![CI](https://github.com/kleinjm/boldsign-ruby/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kleinjm/boldsign-ruby/actions/workflows/ci.yml)
+[![API docs](https://img.shields.io/badge/docs-rubydoc.info-blue.svg)](https://rubydoc.info/github/kleinjm/boldsign-ruby/main)
+
 A Ruby client for the [BoldSign](https://developers.boldsign.com/) e-signature API.
 
 Wraps every public endpoint of the BoldSign v1 REST API: documents, templates,
@@ -103,11 +106,24 @@ HTTP errors raise a typed subclass of `Boldsign::Error`:
 `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitError` (429),
 `ServerError` (5xx). Each carries `#status`, `#body`, and `#response`.
 
+## Documentation
+
+Full YARD API documentation is auto-built and hosted at
+[rubydoc.info/github/kleinjm/boldsign-ruby/main](https://rubydoc.info/github/kleinjm/boldsign-ruby/main).
+
+To generate locally:
+
+```sh
+bundle exec yard doc
+open doc/index.html
+```
+
 ## Development
 
 ```sh
 bundle install
-bundle exec rspec
+bundle exec rspec        # run tests (enforces 100% line + branch coverage)
+bundle exec yard doc     # build local API docs to ./doc
 ```
 
 ## License

@@ -1,5 +1,6 @@
 module Boldsign
   module Resources
+    # Contact-group endpoints (`/v1/contactGroups/*`).
     class ContactGroup < Resource
       def list(**params); @client.get("/v1/contactGroups/list", params); end
       def get(group_id);  @client.get("/v1/contactGroups/get", groupId: group_id); end

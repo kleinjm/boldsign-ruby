@@ -1,5 +1,6 @@
 module Boldsign
   module Resources
+    # User-management endpoints (`/v1/users/*`).
     class User < Resource
       def list(**params);   @client.get("/v1/users/list", params); end
       def get(user_id);     @client.get("/v1/users/get", userId: user_id); end

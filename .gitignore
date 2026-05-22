@@ -5,5 +5,7 @@
 /tmp/
 /coverage/
 /.resultset.json
+/doc/
+/.yardoc/
 *.gem
 .DS_Store

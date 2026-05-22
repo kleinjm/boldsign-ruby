@@ -1,5 +1,6 @@
 module Boldsign
   module Resources
+    # Team endpoints (`/v1/teams/*`).
     class Team < Resource
       def list(**params); @client.get("/v1/teams/list", params); end
       def get(team_id);   @client.get("/v1/teams/get", teamId: team_id); end

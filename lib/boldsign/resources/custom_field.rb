@@ -1,5 +1,6 @@
 module Boldsign
   module Resources
+    # Reusable custom-field endpoints (`/v1/customField/*`).
     class CustomField < Resource
       def list(**params); @client.get("/v1/customField/list", params); end
       def create(body);   @client.post("/v1/customField/create", body: body); end
