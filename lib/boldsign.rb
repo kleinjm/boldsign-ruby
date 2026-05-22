@@ -4,6 +4,7 @@ require "json"
 
 require_relative "boldsign/version"
 require_relative "boldsign/error"
+require_relative "boldsign/case_convert"
 require_relative "boldsign/client"
 require_relative "boldsign/resource"
 require_relative "boldsign/resources/brand"

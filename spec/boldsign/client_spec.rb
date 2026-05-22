@@ -46,7 +46,7 @@ RSpec.describe Boldsign::Client do
   describe "#post" do
     it "encodes body as JSON with the correct Content-Type" do
       stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
-             .with(body: { title: "Hi" }.to_json,
+             .with(body: { "Title" => "Hi" }.to_json,
                    headers: { "X-API-KEY" => "k", "Content-Type" => "application/json" })
              .to_return(status: 200, body: '{"documentId":"abc"}',
                         headers: { "Content-Type" => "application/json" })
@@ -75,11 +75,11 @@ RSpec.describe Boldsign::Client do
       )
 
       expect(stub).to have_been_requested
-      expect(captured_body).to include('name="title"')
+      expect(captured_body).to include('name="Title"')
       expect(captured_body).to include("NDA")
-      expect(captured_body).to include('name="signers"')
-      expect(captured_body).to include('"emailAddress":"jane@example.com"')
-      expect(captured_body).to include('name="disableEmails"')
+      expect(captured_body).to include('name="Signers"')
+      expect(captured_body).to include('"EmailAddress":"jane@example.com"')
+      expect(captured_body).to include('name="DisableEmails"')
       # Faraday::Multipart serializes Array values with a trailing `[]` suffix.
       expect(captured_body).to include('name="Files[]"')
       expect(captured_body).to include('filename="nda.pdf"')
@@ -108,7 +108,7 @@ RSpec.describe Boldsign::Client do
       )
 
       expect(stub).to have_been_requested
-      expect(captured_body).not_to include('name="brandId"')
+      expect(captured_body).not_to include('name="BrandId"')
       expect(captured_body).to include("application/octet-stream")
     end
 

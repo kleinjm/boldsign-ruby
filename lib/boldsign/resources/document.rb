@@ -77,7 +77,12 @@ module Boldsign
         parts = body.each_with_object({}) do |(key, value), acc|
           next if value.nil?
 
-          acc[key.to_s] = scalar?(value) ? value.to_s : JSON.generate(value)
+          pascal_key = Boldsign::CaseConvert.pascalize_key(key)
+          acc[pascal_key] = if scalar?(value)
+                              value.to_s
+                            else
+                              JSON.generate(Boldsign::CaseConvert.pascalize(value))
+                            end
         end
         parts["Files"] = Array(files).map { |f| file_part(f) }
         parts

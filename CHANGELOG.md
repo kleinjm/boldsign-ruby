@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-22
+
+### Changed
+- Request bodies (JSON and multipart) now have their Hash keys recursively
+  converted to PascalCase before being sent to BoldSign. Callers can pass
+  idiomatic snake_case (or camelCase) Ruby symbols/strings and the gem will
+  emit the casing the API expects. Already-PascalCase keys pass through
+  unchanged. Non-Hash/Array values (including IO objects and
+  `Faraday::Multipart::FilePart` instances) are not touched.
+
+### Added
+- `Boldsign::CaseConvert` module with `pascalize` / `pascalize_key` helpers
+  for callers that need to PascalCase keys outside of the HTTP path.
+
 ## [0.2.0] — 2026-05-22
 
 ### Added
