@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-22
+
+### Added
+- `Boldsign::Resources::Document#send_document` now supports multipart file
+  uploads via a `files:` keyword. Pass an array of `{io:, filename:,
+  content_type:}` hashes (or `Faraday::Multipart::FilePart` instances) to
+  send PDFs (or other supported file types) for signature. When `files:` is
+  omitted the request is sent as JSON, preserving the prior behavior.
+
 ## [0.1.0] — 2026-05-22
 
 ### Added

@@ -56,6 +56,72 @@ RSpec.describe Boldsign::Client do
       expect(result).to eq({ "documentId" => "abc" })
       expect(stub).to have_been_requested
     end
+
+    it "sends a multipart request when files: is provided" do
+      captured_body = nil
+      stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
+             .with { |req|
+               captured_body = req.body.dup
+               req.headers["Content-Type"].to_s.include?("multipart/form-data")
+             }
+             .to_return(status: 200, body: '{"documentId":"abc"}',
+                        headers: { "Content-Type" => "application/json" })
+
+      described_class.new(api_key: "k").documents.send_document(
+        title: "NDA",
+        signers: [{ name: "Jane", emailAddress: "jane@example.com" }],
+        disableEmails: true,
+        files: [{ io: StringIO.new("PDF"), filename: "nda.pdf", content_type: "application/pdf" }]
+      )
+
+      expect(stub).to have_been_requested
+      expect(captured_body).to include('name="title"')
+      expect(captured_body).to include("NDA")
+      expect(captured_body).to include('name="signers"')
+      expect(captured_body).to include('"emailAddress":"jane@example.com"')
+      expect(captured_body).to include('name="disableEmails"')
+      # Faraday::Multipart serializes Array values with a trailing `[]` suffix.
+      expect(captured_body).to include('name="Files[]"')
+      expect(captured_body).to include('filename="nda.pdf"')
+    end
+
+    it "passes through a Faraday::Multipart::FilePart unchanged" do
+      stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
+             .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
+
+      part = Faraday::Multipart::FilePart.new(StringIO.new("PDF"), "application/pdf", "x.pdf")
+      described_class.new(api_key: "k").documents.send_document(title: "T", files: [part])
+
+      expect(stub).to have_been_requested
+    end
+
+    it "skips nil top-level fields and defaults content_type when omitted, accepting string keys" do
+      captured_body = nil
+      stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
+             .with { |req| captured_body = req.body.dup; true }
+             .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
+
+      described_class.new(api_key: "k").documents.send_document(
+        title: "T",
+        brandId: nil,
+        files: [{ "io" => StringIO.new("X"), "filename" => "x.bin" }]
+      )
+
+      expect(stub).to have_been_requested
+      expect(captured_body).not_to include('name="brandId"')
+      expect(captured_body).to include("application/octet-stream")
+    end
+
+    it "raises ArgumentError for file entries missing :io or :filename" do
+      client = described_class.new(api_key: "k")
+
+      expect { client.documents.send_document(title: "T", files: [{ filename: "x.pdf" }]) }
+        .to raise_error(ArgumentError, /:io/)
+      expect { client.documents.send_document(title: "T", files: [{ io: StringIO.new("x") }]) }
+        .to raise_error(ArgumentError, /:filename/)
+      expect { client.documents.send_document(title: "T", files: ["not a hash"]) }
+        .to raise_error(ArgumentError, /Hash/)
+    end
   end
 
   describe "error handling" do
