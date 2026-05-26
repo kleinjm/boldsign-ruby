@@ -46,7 +46,7 @@ RSpec.describe Boldsign::Client do
   describe "#post" do
     it "encodes body as JSON with the correct Content-Type" do
       stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
-             .with(body: { "Title" => "Hi" }.to_json,
+             .with(body: { "title" => "Hi" }.to_json,
                    headers: { "X-API-KEY" => "k", "Content-Type" => "application/json" })
              .to_return(status: 200, body: '{"documentId":"abc"}',
                         headers: { "Content-Type" => "application/json" })
@@ -75,13 +75,20 @@ RSpec.describe Boldsign::Client do
       )
 
       expect(stub).to have_been_requested
-      expect(captured_body).to include('name="Title"')
+      expect(captured_body).to include('name="title"')
       expect(captured_body).to include("NDA")
-      expect(captured_body).to include('name="Signers"')
-      expect(captured_body).to include('"EmailAddress":"jane@example.com"')
-      expect(captured_body).to include('name="DisableEmails"')
-      # Faraday::Multipart serializes Array values with a trailing `[]` suffix.
-      expect(captured_body).to include('name="Files[]"')
+      # Single-element signer array is unwrapped to a JSON object (NOT a JSON
+      # array string) — BoldSign rejects `[{...}]` for multipart signers.
+      expect(captured_body).to include('name="signers"')
+      expect(captured_body).not_to include('name="signers[]"')
+      expect(captured_body).to match(/name="signers"\r\n\r\n\{/)
+      expect(captured_body).to include('"emailAddress":"jane@example.com"')
+      expect(captured_body).to include('name="disableEmails"')
+      # `Files` is keyed verbatim (capital F, no `[]` brackets) and carries a
+      # single file part — Faraday's automatic `Files[]` bracketing trips
+      # BoldSign so the gem sends one FilePart value, not an array.
+      expect(captured_body).to include('name="Files"')
+      expect(captured_body).not_to include('name="Files[]"')
       expect(captured_body).to include('filename="nda.pdf"')
     end
 
@@ -108,7 +115,7 @@ RSpec.describe Boldsign::Client do
       )
 
       expect(stub).to have_been_requested
-      expect(captured_body).not_to include('name="BrandId"')
+      expect(captured_body).not_to include('name="brandId"')
       expect(captured_body).to include("application/octet-stream")
     end
 
@@ -122,6 +129,39 @@ RSpec.describe Boldsign::Client do
       expect { client.documents.send_document(title: "T", files: ["not a hash"]) }
         .to raise_error(ArgumentError, /Hash/)
     end
+
+    it "JSON-encodes nested Hash body fields (e.g. metaData)" do
+      captured_body = nil
+      stub_request(:post, "https://api.boldsign.com/v1/document/send")
+        .with { |req| captured_body = req.body.dup; true }
+        .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
+
+      described_class.new(api_key: "k").documents.send_document(
+        title: "T",
+        meta_data: { source_document_uuid: "abc" },
+        files: [{ io: StringIO.new("X"), filename: "x.pdf" }]
+      )
+
+      expect(captured_body).to include('name="metaData"')
+      expect(captured_body).to include('"sourceDocumentUuid":"abc"')
+    end
+
+    it "raises NotImplementedError for multi-file or multi-element array bodies" do
+      part = Faraday::Multipart::FilePart.new(StringIO.new("x"), "application/pdf", "x.pdf")
+      client = described_class.new(api_key: "k")
+
+      expect { client.documents.send_document(title: "T", files: [part, part]) }
+        .to raise_error(NotImplementedError, /multi-file/)
+
+      expect do
+        client.documents.send_document(
+          title: "T",
+          signers: [{ name: "A" }, { name: "B" }],
+          files: [part]
+        )
+      end.to raise_error(NotImplementedError, /multi-element/)
+    end
+
   end
 
   describe "error handling" do

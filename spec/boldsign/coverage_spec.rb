@@ -21,10 +21,10 @@ RSpec.describe "full coverage" do
   describe "Boldsign::Client HTTP verbs" do
     it "issues put, patch, delete with bodies and params" do
       put_stub = stub_request(:put, "https://api.boldsign.com/v1/template/edit")
-                 .with(query: { templateId: "t1" }, body: { "Title" => "x" }.to_json)
+                 .with(query: { templateId: "t1" }, body: { "title" => "x" }.to_json)
                  .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
       patch_stub = stub_request(:patch, "https://api.boldsign.com/v1/document/extendExpiry")
-                   .with(query: { documentId: "d1" }, body: { "NewExpiryValue" => 5 }.to_json)
+                   .with(query: { documentId: "d1" }, body: { "newExpiryValue" => 5 }.to_json)
                    .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
       delete_stub = stub_request(:delete, "https://api.boldsign.com/v1/document/delete")
                     .with(query: { documentId: "d1" })

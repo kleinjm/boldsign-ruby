@@ -125,7 +125,7 @@ module Boldsign
             req.body = body
           else
             req.headers["Content-Type"] = "application/json"
-            req.body = body.is_a?(String) ? body : JSON.generate(CaseConvert.pascalize(body))
+            req.body = body.is_a?(String) ? body : JSON.generate(CaseConvert.camelize(body))
           end
         end
       end

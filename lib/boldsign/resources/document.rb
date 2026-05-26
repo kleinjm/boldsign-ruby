@@ -73,19 +73,34 @@ module Boldsign
 
       private
 
+      # BoldSign's POST /v1/document/send multipart endpoint is fussy about
+      # repeated/array-valued parts. Single signers must be sent as one
+      # multipart part whose value is the signer JSON OBJECT (not a JSON array
+      # containing one object). Files must be sent as a single FilePart value
+      # for one upload; Faraday's automatic `Files[]` bracketing breaks the
+      # request. For the single-signer, single-file flow (the common case) we
+      # unwrap one-element arrays here. Multi-signer / multi-file is not yet
+      # supported via this helper and will raise.
       def multipart_send_body(body, files)
         parts = body.each_with_object({}) do |(key, value), acc|
           next if value.nil?
 
-          pascal_key = Boldsign::CaseConvert.pascalize_key(key)
-          acc[pascal_key] = if scalar?(value)
-                              value.to_s
-                            else
-                              JSON.generate(Boldsign::CaseConvert.pascalize(value))
-                            end
+          camel_key = Boldsign::CaseConvert.camelize_key(key)
+          acc[camel_key] = encode_multipart_value(value)
         end
-        parts["Files"] = Array(files).map { |f| file_part(f) }
+        files_array = Array(files)
+        raise NotImplementedError, "multi-file uploads are not supported yet" if files_array.size > 1
+
+        parts["Files"] = file_part(files_array.first)
         parts
+      end
+
+      def encode_multipart_value(value)
+        return value.to_s if scalar?(value)
+        return JSON.generate(Boldsign::CaseConvert.camelize(value)) unless value.is_a?(Array)
+        raise NotImplementedError, "multi-element arrays are not supported in multipart bodies yet" if value.size > 1
+
+        JSON.generate(Boldsign::CaseConvert.camelize(value.first))
       end
 
       def file_part(file)
