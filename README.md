@@ -17,6 +17,32 @@ gem "boldsign"
 
 ## Configuration
 
+The client authenticates with either an API key or OAuth 2.0.
+
+### OAuth 2.0 (client credentials)
+
+Register an OAuth app in the BoldSign dashboard (API → OAuth Apps) and configure
+its `client_id` / `client_secret`. The client fetches a bearer token from the
+region's account host, caches it until shortly before it expires, and refreshes
+automatically — no token plumbing on your side.
+
+```ruby
+Boldsign.configure do |c|
+  c.client_id     = ENV["BOLDSIGN_CLIENT_ID"]
+  c.client_secret = ENV["BOLDSIGN_CLIENT_SECRET"]
+  c.region        = :us   # :us, :eu, :ca, :au
+  # c.scope       = "BoldSign.Documents.All"  # optional; empty grants all the app allows
+end
+```
+
+You can also pass a token you obtained yourself (used as-is, not refreshed):
+
+```ruby
+Boldsign::Client.new(access_token: "…", region: :us)
+```
+
+### API key
+
 ```ruby
 Boldsign.configure do |c|
   c.api_key = ENV["BOLDSIGN_API_KEY"]
@@ -30,14 +56,17 @@ Or instantiate a client directly:
 client = Boldsign::Client.new(api_key: "…", region: :us)
 ```
 
-Region base URLs:
+Region hosts:
 
-| Region | URL |
-| ------ | --- |
-| `:us`  | `https://api.boldsign.com` |
-| `:eu`  | `https://api-eu.boldsign.com` |
-| `:ca`  | `https://api-ca.boldsign.com` |
-| `:au`  | `https://api-au.boldsign.com` |
+| Region | API base URL | OAuth account host |
+| ------ | ------------ | ------------------ |
+| `:us`  | `https://api.boldsign.com` | `https://account.boldsign.com` |
+| `:eu`  | `https://api-eu.boldsign.com` | `https://account-eu.boldsign.com` |
+| `:ca`  | `https://api-ca.boldsign.com` | `https://account-ca.boldsign.com` |
+| `:au`  | `https://api-au.boldsign.com` | `https://account-au.boldsign.com` |
+
+The token endpoint is the account host + `/connect/token`; override the full URL
+with `token_url:` if a region differs.
 
 ## Usage
 

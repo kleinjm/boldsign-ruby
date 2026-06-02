@@ -8,9 +8,21 @@ module Boldsign
   # Low-level verb methods ({#get}, {#post}, {#put}, {#patch}, {#delete},
   # {#download}) are also available for hitting any endpoint directly.
   #
-  # @example
+  # Authenticates with either an API key (`X-API-KEY`) or OAuth 2.0
+  # (`Authorization: Bearer`). For OAuth, pass `client_id`/`client_secret` and
+  # the client fetches + caches a token via the client credentials grant; or
+  # pass a `access_token` you obtained yourself.
+  #
+  # @example API key
   #   client = Boldsign::Client.new(api_key: ENV["BOLDSIGN_API_KEY"], region: :us)
   #   client.documents.send_document(title: "NDA", signers: [...])
+  #
+  # @example OAuth client credentials
+  #   client = Boldsign::Client.new(
+  #     client_id: ENV["BOLDSIGN_CLIENT_ID"],
+  #     client_secret: ENV["BOLDSIGN_CLIENT_SECRET"],
+  #     region: :us
+  #   )
   class Client
     # Default region (US).
     DEFAULT_BASE_URL = "https://api.boldsign.com".freeze
@@ -18,25 +30,50 @@ module Boldsign
     # User-Agent header value sent on every request.
     USER_AGENT = "boldsign-ruby/#{Boldsign::VERSION}".freeze
 
-    # @return [String] the API key in use.
+    # @return [String, nil] the API key in use, when authenticating via API key.
     attr_reader :api_key
+
+    # @return [Symbol] the resolved auth mode (`:api_key`, `:oauth`, or `:bearer`).
+    attr_reader :auth_mode
 
     # @return [String] the resolved base URL (region or explicit override).
     attr_reader :base_url
 
     # @param api_key [String, nil] BoldSign API key. Falls back to `ENV["BOLDSIGN_API_KEY"]`.
-    # @param region [Symbol, nil] One of `:us`, `:eu`, `:ca`, `:au`. Ignored if `base_url` is given.
-    # @param base_url [String, nil] Explicit base URL override.
+    # @param client_id [String, nil] OAuth app client ID (enables the client credentials grant).
+    # @param client_secret [String, nil] OAuth app client secret (required with `client_id`).
+    # @param access_token [String, nil] A pre-obtained OAuth bearer token (used as-is, not refreshed).
+    # @param scope [String, nil] OAuth scope to request (defaults to {AccessToken::DEFAULT_SCOPE}).
+    # @param token_url [String, nil] Override for the full OAuth token endpoint URL.
+    # @param region [Symbol, nil] One of `:us`, `:eu`, `:ca`, `:au`. Ignored if `base_url`/`token_url` is given.
+    # @param base_url [String, nil] Explicit API base URL override.
     # @param adapter [Symbol] Faraday adapter (defaults to `Faraday.default_adapter`).
     # @param logger [Logger, nil] Optional logger; when present, Faraday's logger middleware is enabled.
-    # @raise [ConfigurationError] when no API key is available.
-    def initialize(api_key: nil, region: nil, base_url: nil, adapter: Faraday.default_adapter, logger: nil)
+    # @raise [ConfigurationError] when no usable credentials are provided.
+    def initialize(api_key: nil, client_id: nil, client_secret: nil, access_token: nil,
+                   scope: nil, token_url: nil, region: nil, base_url: nil,
+                   adapter: Faraday.default_adapter, logger: nil)
       @api_key = api_key || ENV["BOLDSIGN_API_KEY"]
-      raise ConfigurationError, "Missing BoldSign API key" if @api_key.nil? || @api_key.empty?
-
+      @static_access_token = access_token
       @base_url = base_url || Boldsign::REGIONS[region&.to_sym] || DEFAULT_BASE_URL
       @adapter = adapter
       @logger = logger
+
+      if present?(client_id) && present?(client_secret)
+        @auth_mode = :oauth
+        @access_token = AccessToken.new(
+          client_id: client_id, client_secret: client_secret,
+          token_url: token_url || default_token_url(region),
+          scope: scope || AccessToken::DEFAULT_SCOPE, adapter: adapter
+        )
+      elsif present?(@static_access_token)
+        @auth_mode = :bearer
+      elsif present?(@api_key)
+        @auth_mode = :api_key
+      else
+        raise ConfigurationError,
+              "Missing BoldSign credentials: provide client_id/client_secret, access_token, or api_key"
+      end
     end
 
     # @return [Resources::Brand]
@@ -137,12 +174,33 @@ module Boldsign
       Faraday.new(url: @base_url) do |f|
         f.request :multipart if multipart
         f.request :url_encoded
-        f.headers["X-API-KEY"] = @api_key
+        apply_auth(f.headers)
         f.headers["Accept"] = "application/json"
         f.headers["User-Agent"] = USER_AGENT
         f.response :logger, @logger if @logger
         f.adapter @adapter
       end
+    end
+
+    def apply_auth(headers)
+      if @auth_mode == :api_key
+        headers["X-API-KEY"] = @api_key
+      else
+        headers["Authorization"] = "Bearer #{bearer_token}"
+      end
+    end
+
+    def bearer_token
+      @auth_mode == :oauth ? @access_token.value : @static_access_token
+    end
+
+    def present?(value)
+      !value.nil? && !value.empty?
+    end
+
+    def default_token_url(region)
+      base = Boldsign::TOKEN_REGIONS[region&.to_sym] || Boldsign::DEFAULT_TOKEN_BASE_URL
+      "#{base}#{AccessToken::TOKEN_PATH}"
     end
 
     def parse_body(response)

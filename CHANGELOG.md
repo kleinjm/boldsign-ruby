@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-02
+
+### Added
+- OAuth 2.0 authentication via the **client credentials** grant. Configure
+  `client_id` / `client_secret` (on `Boldsign.configure` or `Client.new`) and
+  the client fetches a bearer token from the region's account host
+  (`https://account.boldsign.com/connect/token` for `:us`), caches it until
+  shortly before `expires_in` lapses, and sends `Authorization: Bearer …`
+  instead of `X-API-KEY`. Token fetches are mutex-guarded for shared clients.
+- `scope:` (defaults to `BoldSign.Documents.All`) and `token_url:` options to
+  override the requested scope and token endpoint.
+- `access_token:` option to supply a pre-obtained bearer token that is used
+  as-is (not refreshed).
+- `Boldsign::AccessToken` encapsulating the client-credentials token lifecycle.
+- `TOKEN_REGIONS` / `DEFAULT_TOKEN_BASE_URL` constants and `Client#auth_mode`.
+
+### Changed
+- `Client.new` no longer requires an API key. It accepts any one of
+  `client_id`/`client_secret`, `access_token`, or `api_key`, and raises
+  `ConfigurationError` only when none is provided. The API-key path is
+  unchanged, so existing `api_key:` callers keep working.
+
 ## [0.4.0] — 2026-05-22
 
 ### Changed
@@ -68,5 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 100% line and branch test coverage enforced via SimpleCov.
 - GitHub Actions CI on Ruby 3.4 and 4.0.
 
-[Unreleased]: https://github.com/kleinjm/boldsign-ruby/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kleinjm/boldsign-ruby/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kleinjm/boldsign-ruby/compare/v0.4.0...v0.5.0
 [0.1.0]: https://github.com/kleinjm/boldsign-ruby/releases/tag/v0.1.0

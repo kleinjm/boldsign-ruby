@@ -2,9 +2,13 @@ require "spec_helper"
 
 RSpec.describe Boldsign::Client do
   describe "#initialize" do
-    it "raises ConfigurationError when API key is missing" do
+    it "raises ConfigurationError when no usable credentials are provided" do
       expect { described_class.new(api_key: nil) }
         .to raise_error(Boldsign::ConfigurationError)
+      expect { described_class.new(api_key: "") }
+        .to raise_error(Boldsign::ConfigurationError)
+      expect { described_class.new }
+        .to raise_error(Boldsign::ConfigurationError, /client_id/)
     end
 
     it "resolves base_url from region and allows override" do
@@ -15,6 +19,75 @@ RSpec.describe Boldsign::Client do
       expect(us_client.base_url).to eq("https://api.boldsign.com")
       expect(eu_client.base_url).to eq("https://api-eu.boldsign.com")
       expect(custom_client.base_url).to eq("https://example.test")
+    end
+
+    it "reports the api_key auth mode" do
+      expect(described_class.new(api_key: "k").auth_mode).to eq(:api_key)
+    end
+  end
+
+  describe "OAuth authentication" do
+    def stub_token(host: "https://account.boldsign.com")
+      stub_request(:post, "#{host}/connect/token")
+        .to_return(status: 200,
+                   body: { access_token: "oauth-tok", expires_in: 3600 }.to_json,
+                   headers: { "Content-Type" => "application/json" })
+    end
+
+    def stub_list(token: "oauth-tok")
+      stub_request(:get, "https://api.boldsign.com/v1/document/list")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+        .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
+    end
+
+    it "fetches a token and sends Authorization: Bearer" do
+      token_stub = stub_token
+      api_stub = stub_list
+
+      client = described_class.new(client_id: "cid", client_secret: "secret", region: :us)
+      expect(client.auth_mode).to eq(:oauth)
+      client.documents.list
+
+      expect(token_stub).to have_been_requested
+      expect(api_stub).to have_been_requested
+    end
+
+    it "resolves the token host from the region, defaulting to US when region is absent" do
+      default_stub = stub_token
+      eu_stub = stub_token(host: "https://account-eu.boldsign.com")
+      stub_request(:get, %r{boldsign\.com/v1/document/list})
+        .to_return(status: 200, body: "{}", headers: { "Content-Type" => "application/json" })
+
+      described_class.new(client_id: "c", client_secret: "s").documents.list
+      described_class.new(client_id: "c", client_secret: "s", region: :eu).documents.list
+
+      expect(default_stub).to have_been_requested
+      expect(eu_stub).to have_been_requested
+    end
+
+    it "honors a token_url override" do
+      token_stub = stub_request(:post, "https://custom.test/token")
+                   .to_return(status: 200,
+                              body: { access_token: "oauth-tok", expires_in: 3600 }.to_json,
+                              headers: { "Content-Type" => "application/json" })
+      api_stub = stub_list
+
+      described_class.new(
+        client_id: "c", client_secret: "s", token_url: "https://custom.test/token"
+      ).documents.list
+
+      expect(token_stub).to have_been_requested
+      expect(api_stub).to have_been_requested
+    end
+
+    it "uses a static access_token without fetching one" do
+      api_stub = stub_list(token: "static-tok")
+
+      client = described_class.new(access_token: "static-tok")
+      expect(client.auth_mode).to eq(:bearer)
+      client.documents.list
+
+      expect(api_stub).to have_been_requested
     end
   end
 
