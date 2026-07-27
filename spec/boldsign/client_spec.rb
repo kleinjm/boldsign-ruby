@@ -219,22 +219,42 @@ RSpec.describe Boldsign::Client do
       expect(captured_body).to include('"sourceDocumentUuid":"abc"')
     end
 
-    it "raises NotImplementedError for multi-file or multi-element array bodies" do
+    it "raises NotImplementedError for multi-file bodies (still unsupported)" do
       part = Faraday::Multipart::FilePart.new(StringIO.new("x"), "application/pdf", "x.pdf")
       client = described_class.new(api_key: "k")
 
       expect { client.documents.send_document(title: "T", files: [part, part]) }
         .to raise_error(NotImplementedError, /multi-file/)
-
-      expect do
-        client.documents.send_document(
-          title: "T",
-          signers: [{ name: "A" }, { name: "B" }],
-          files: [part]
-        )
-      end.to raise_error(NotImplementedError, /multi-element/)
     end
 
+    it "sends a multi-signer multipart request as repeated same-named parts, not a JSON array or bracket-suffixed field" do
+      captured_body = nil
+      stub = stub_request(:post, "https://api.boldsign.com/v1/document/send")
+             .with { |req| captured_body = req.body.dup; true }
+             .to_return(status: 200, body: '{"documentId":"abc"}',
+                        headers: { "Content-Type" => "application/json" })
+
+      described_class.new(api_key: "k").documents.send_document(
+        title: "NDA",
+        signers: [
+          { name: "Jane", emailAddress: "jane@example.com", signerOrder: 1 },
+          { name: "Cilian", emailAddress: "cilian@example.com", signerOrder: 2 }
+        ],
+        enableSigningOrder: true,
+        files: [{ io: StringIO.new("PDF"), filename: "nda.pdf" }]
+      )
+
+      expect(stub).to have_been_requested
+      # Two distinct `signers` parts, same field name, no `[]` suffix or
+      # wrapping JSON array — each is its own JSON object.
+      expect(captured_body.scan('name="signers"').size).to eq(2)
+      expect(captured_body).not_to include('name="signers[]"')
+      expect(captured_body).to include('"name":"Jane"')
+      expect(captured_body).to include('"signerOrder":1')
+      expect(captured_body).to include('"name":"Cilian"')
+      expect(captured_body).to include('"signerOrder":2')
+      expect(captured_body).not_to match(/name="signers"\r\n\r\n\[/)
+    end
   end
 
   describe "error handling" do

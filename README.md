@@ -1,7 +1,7 @@
 # boldsign-ruby
 
-[![CI](https://github.com/kleinjm/boldsign-ruby/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kleinjm/boldsign-ruby/actions/workflows/ci.yml)
-[![API docs](https://img.shields.io/badge/docs-rubydoc.info-blue.svg)](https://rubydoc.info/github/kleinjm/boldsign-ruby/main)
+[![CI](https://github.com/EscrowSafe/boldsign-ruby/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/EscrowSafe/boldsign-ruby/actions/workflows/ci.yml)
+[![API docs](https://img.shields.io/badge/docs-rubydoc.info-blue.svg)](https://rubydoc.info/github/EscrowSafe/boldsign-ruby/main)
 
 A Ruby client for the [BoldSign](https://developers.boldsign.com/) e-signature API.
 
@@ -138,7 +138,7 @@ HTTP errors raise a typed subclass of `Boldsign::Error`:
 ## Documentation
 
 Full YARD API documentation is auto-built and hosted at
-[rubydoc.info/github/kleinjm/boldsign-ruby/main](https://rubydoc.info/github/kleinjm/boldsign-ruby/main).
+[rubydoc.info/github/EscrowSafe/boldsign-ruby/main](https://rubydoc.info/github/EscrowSafe/boldsign-ruby/main).
 
 To generate locally:
 

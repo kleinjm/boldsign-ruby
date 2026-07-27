@@ -74,13 +74,16 @@ module Boldsign
       private
 
       # BoldSign's POST /v1/document/send multipart endpoint is fussy about
-      # repeated/array-valued parts. Single signers must be sent as one
-      # multipart part whose value is the signer JSON OBJECT (not a JSON array
-      # containing one object). Files must be sent as a single FilePart value
-      # for one upload; Faraday's automatic `Files[]` bracketing breaks the
-      # request. For the single-signer, single-file flow (the common case) we
-      # unwrap one-element arrays here. Multi-signer / multi-file is not yet
-      # supported via this helper and will raise.
+      # repeated/array-valued parts. Multi-valued fields (e.g. two signers)
+      # must be sent as one multipart part per element, each keyed with the
+      # *same* field name and JSON-encoding just that one element — not a
+      # single field whose value is a JSON array, and not Faraday's default
+      # `Signers[]=` bracket-suffixed encoding (BoldSign rejects both). See
+      # `Client#connection`'s `flat_encode: true`, which is what makes
+      # `encode_multipart_value`'s Array output emit that way. Files must be
+      # sent as a single FilePart value for one upload; Faraday's automatic
+      # `Files[]` bracketing breaks the request the same way. Multi-file is
+      # not yet supported via this helper and will raise.
       def multipart_send_body(body, files)
         parts = body.each_with_object({}) do |(key, value), acc|
           next if value.nil?
@@ -95,12 +98,15 @@ module Boldsign
         parts
       end
 
+      # Scalars pass through as-is. A Hash (or single-element Array, once
+      # `flat_encode` unwraps it to one part) becomes one JSON-object part.
+      # A multi-element Array becomes one JSON-object part *per element*,
+      # all sharing the same field name — see `multipart_send_body`'s comment.
       def encode_multipart_value(value)
         return value.to_s if scalar?(value)
-        return JSON.generate(Boldsign::CaseConvert.camelize(value)) unless value.is_a?(Array)
-        raise NotImplementedError, "multi-element arrays are not supported in multipart bodies yet" if value.size > 1
+        return value.map { |v| JSON.generate(Boldsign::CaseConvert.camelize(v)) } if value.is_a?(Array)
 
-        JSON.generate(Boldsign::CaseConvert.camelize(value.first))
+        JSON.generate(Boldsign::CaseConvert.camelize(value))
       end
 
       def file_part(file)
