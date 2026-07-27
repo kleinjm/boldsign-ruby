@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.summary     = "Ruby client for the BoldSign e-signature API"
   spec.description = "A Ruby wrapper for the BoldSign REST API (documents, templates, " \
                      "contacts, teams, brands, webhooks, and more)."
-  spec.homepage    = "https://github.com/kleinjm/boldsign-ruby"
+  spec.homepage    = "https://github.com/EscrowSafe/boldsign-ruby"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.0"
 

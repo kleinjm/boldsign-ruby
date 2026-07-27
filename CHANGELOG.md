@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-27
+
 ### Added
 - Multi-signer support for multipart `send_document` (file uploads). Array-valued
   body fields (e.g. `signers: [...]`) now emit one JSON-object part per element,
@@ -100,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 100% line and branch test coverage enforced via SimpleCov.
 - GitHub Actions CI on Ruby 3.4 and 4.0.
 
-[Unreleased]: https://github.com/kleinjm/boldsign-ruby/compare/v0.5.0...HEAD
-[0.5.0]: https://github.com/kleinjm/boldsign-ruby/compare/v0.4.0...v0.5.0
-[0.1.0]: https://github.com/kleinjm/boldsign-ruby/releases/tag/v0.1.0
+[Unreleased]: https://github.com/EscrowSafe/boldsign-ruby/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/EscrowSafe/boldsign-ruby/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/EscrowSafe/boldsign-ruby/compare/v0.4.0...v0.5.0
+[0.1.0]: https://github.com/EscrowSafe/boldsign-ruby/releases/tag/v0.1.0
