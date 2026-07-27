@@ -172,7 +172,13 @@ module Boldsign
 
     def connection(multipart: false)
       Faraday.new(url: @base_url) do |f|
-        f.request :multipart if multipart
+        # flat_encode: true makes Faraday::Multipart::Middleware emit each
+        # Array element as its own part under the *same* field name (e.g. two
+        # `Signers` parts) instead of bracket-suffixing it (`Signers[]=`),
+        # which BoldSign's /v1/document/send endpoint rejects. See
+        # Resources::Document#encode_multipart_value, the caller that relies
+        # on this.
+        f.request :multipart, flat_encode: true if multipart
         f.request :url_encoded
         apply_auth(f.headers)
         f.headers["Accept"] = "application/json"

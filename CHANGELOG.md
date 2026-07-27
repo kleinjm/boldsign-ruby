@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Multi-signer support for multipart `send_document` (file uploads). Array-valued
+  body fields (e.g. `signers: [...]`) now emit one JSON-object part per element,
+  all under the same field name (`Signers`, `Signers`, …) via
+  `Faraday::Multipart::Middleware`'s `flat_encode: true` — confirmed against
+  BoldSign's docs as the correct encoding for a multi-recipient envelope sent
+  alongside an uploaded file (as opposed to a template reference). Previously
+  this raised `NotImplementedError`. Multi-file uploads are still unsupported
+  and still raise.
+
 ## [0.5.0] — 2026-06-02
 
 ### Added
